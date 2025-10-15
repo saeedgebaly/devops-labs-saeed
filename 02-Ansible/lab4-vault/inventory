@@ -1,0 +1,3 @@
+[db_nodes]
+centos-node ansible_host=192.168.204.130 ansible_user=saeed ansible_become=true
+

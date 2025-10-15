@@ -1,0 +1,85 @@
+---
+# roles/mysql/tasks/main.yml
+# إعداد MySQL 8.0 على CentOS Stream 10 باستخدام Ansible Vault
+
+- name: Install MySQL Python dependencies
+  package:
+    name:
+      - python3-PyMySQL
+    state: present
+
+- name: Add MySQL official repository (EL9 compatible, skip GPG check)
+  yum_repository:
+    name: mysql80-community
+    description: MySQL 8.0 Community Server for EL9
+    baseurl: https://repo.mysql.com/yum/mysql-8.0-community/el/9/$basearch/
+    enabled: yes
+    gpgcheck: no
+
+- name: Import MySQL GPG key (legacy compatible)
+  shell: |
+    curl -fsSL https://repo.mysql.com/RPM-GPG-KEY-mysql-2022 > /etc/pki/rpm-gpg/RPM-GPG-KEY-mysql-2022
+    rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-mysql-2022
+  args:
+    creates: /etc/pki/rpm-gpg/RPM-GPG-KEY-mysql-2022
+
+- name: Clean yum metadata
+  command: dnf clean all
+
+- name: Install MySQL server
+  yum:
+    name: mysql-community-server
+    state: present
+
+- name: Start and enable MySQL service
+  service:
+    name: mysqld
+    state: started
+    enabled: true
+
+# الحصول على كلمة المرور المؤقتة الافتراضية من ملف اللوج
+- name: Get temporary MySQL root password
+  shell: grep 'temporary password' /var/log/mysqld.log | tail -1 | awk '{print $NF}'
+  register: mysql_temp_pass
+  changed_when: false
+
+- name: Set MySQL root password
+  shell: >
+    mysql --connect-expired-password -uroot
+    -p"{{ mysql_temp_pass.stdout }}"
+    -e "ALTER USER 'root'@'localhost' IDENTIFIED BY '{{ vault_mysql_root_password }}';"
+  args:
+  ignore_errors: true
+
+- name: Ensure Python cryptography library is installed
+  package:
+    name: python3-cryptography
+    state: present
+
+
+- name: Create iVolve database
+  community.mysql.mysql_db:
+    name: "{{ mysql_db_name }}"
+    state: present
+    login_user: root
+    login_password: "{{ vault_mysql_root_password }}"
+
+- name: Create iVolve user with privileges
+  community.mysql.mysql_user:
+    name: "{{ mysql_user }}"
+    password: "{{ vault_mysql_user_password }}"
+    priv: "{{ mysql_db_name }}.*:ALL"
+    state: present
+    login_user: root
+    login_password: "{{ vault_mysql_root_password }}"
+
+- name: Validate connection to database
+  shell: >
+    mysql -u {{ mysql_user }} -p{{ vault_mysql_user_password }}
+    -e "SHOW DATABASES;"
+  register: db_output
+
+- name: Show validation result
+  debug:
+    var: db_output.stdout_lines
+
