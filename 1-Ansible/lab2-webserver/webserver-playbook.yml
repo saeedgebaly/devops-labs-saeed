@@ -1,0 +1,111 @@
+---
+- name: Configure Nginx Web Server
+  hosts: managed_nodes
+  become: yes
+  
+  tasks:
+    - name: Gather OS facts
+      setup:
+        gather_subset:
+          - '!all'
+          - '!min'
+          - 'distribution'
+    
+    - name: Update apt cache (for Debian/Ubuntu)
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+      when: ansible_os_family == "Debian"
+    
+    - name: Install EPEL repository (for CentOS/RHEL)
+      yum:
+        name: epel-release
+        state: present
+      when: ansible_os_family == "RedHat"
+    
+    - name: Install Nginx on Debian/Ubuntu
+      apt:
+        name: nginx
+        state: present
+      when: ansible_os_family == "Debian"
+    
+    - name: Install Nginx on RedHat/CentOS
+      yum:
+        name: nginx
+        state: present
+      when: ansible_os_family == "RedHat"
+    
+    - name: Get list of services
+      service_facts:
+    
+    - name: Debug - Show nginx service status
+      debug:
+        msg: "Nginx service found: {{ 'nginx.service' in services }}"
+    
+    - name: Ensure Nginx is started and enabled
+      service:
+        name: nginx
+        state: started
+        enabled: yes
+      register: nginx_service_result
+      failed_when: false
+    
+    - name: Start nginx using systemctl if service module failed
+      shell: |
+        systemctl start nginx
+        systemctl enable nginx
+      when: nginx_service_result.failed is defined and nginx_service_result.failed
+    
+    - name: Wait for Nginx to start
+      wait_for:
+        port: 80
+        delay: 2
+        timeout: 30
+    
+    - name: Determine web root directory
+      set_fact:
+        web_root: "{{ '/var/www/html' if ansible_os_family == 'Debian' else '/usr/share/nginx/html' }}"
+        web_user: "{{ 'www-data' if ansible_os_family == 'Debian' else 'nginx' }}"
+        web_group: "{{ 'www-data' if ansible_os_family == 'Debian' else 'nginx' }}"
+    
+    - name: Copy custom index.html to web root
+      copy:
+        src: files/index.html
+        dest: "{{ web_root }}/index.html"
+        owner: "{{ web_user }}"
+        group: "{{ web_group }}"
+        mode: '0644'
+      notify: Restart Nginx
+    
+    - name: Configure SELinux for Nginx (RedHat/CentOS)
+      shell: |
+        setsebool -P httpd_can_network_connect 1
+        restorecon -Rv /usr/share/nginx/html/
+      when: 
+        - ansible_os_family == "RedHat"
+        - ansible_selinux.status == "enabled"
+      ignore_errors: yes
+    
+    - name: Allow HTTP traffic through firewall (UFW)
+      ufw:
+        rule: allow
+        port: '80'
+        proto: tcp
+      when: ansible_os_family == "Debian"
+      ignore_errors: yes
+    
+    - name: Allow HTTP traffic through firewall (firewalld)
+      firewalld:
+        service: http
+        permanent: yes
+        state: enabled
+        immediate: yes
+      when: ansible_os_family == "RedHat"
+      ignore_errors: yes
+  
+  handlers:
+    - name: Restart Nginx
+      service:
+        name: nginx
+        state: restarted
+      failed_when: false

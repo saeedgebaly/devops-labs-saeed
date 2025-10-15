@@ -1,0 +1,21 @@
+---
+- name: Download kubectl binary
+  get_url:
+    url: https://dl.k8s.io/release/v1.30.0/bin/linux/amd64/kubectl
+    dest: /usr/local/bin/kubectl
+    mode: '0755'
+
+- name: Create symlink to make kubectl globally available
+  file:
+    src: /usr/local/bin/kubectl
+    dest: /usr/bin/kubectl
+    state: link
+
+- name: Verify kubectl installation
+  command: /usr/bin/kubectl version --client
+  register: kubectl_version
+  changed_when: false
+
+- debug:
+    var: kubectl_version.stdout
+
