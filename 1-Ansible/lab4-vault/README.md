@@ -12,23 +12,6 @@ Automate the installation and configuration of MySQL while securing sensitive cr
 4. Secure the database credentials using **Ansible Vault**.
 5. Validate the setup by connecting to the database and listing available databases.
 
----
-
-## Project Structure
-lab4-Vault/
-├── playbook.yml
-├── inventory
-├── group-vars/
-│ └── all/
-│ └── vault.yml # Encrypted using Ansible Vault
-└── roles/
-└── mysql/
-├── tasks/
-│ └── main.yml
-└── vars/
-└── main.yml
-
-
 
 ---
 

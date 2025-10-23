@@ -5,18 +5,6 @@ Run a Java Spring Boot application inside a Docker container using a Maven base 
 
 ---
 
-##  Project Structure
-1/
-├── Dockerfile
-├── pom.xml
-├── src/
-│ └── main/java/com/example/demo/DemoApplication.java
-└── target/
-└── demo-0.0.1-SNAPSHOT.jar
-
-
----
-
 ##  Steps to Run
 
 ###  Clone the Repository

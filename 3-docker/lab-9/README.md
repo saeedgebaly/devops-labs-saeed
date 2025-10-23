@@ -2,19 +2,6 @@
 
 ##  Objective
 Run a Java Spring Boot application inside a Docker container using a **Java 17 base image** and a **prebuilt JAR file**.
-
----
-
-##  Project Structure
-Docker-1/
-├── Dockerfile
-├── pom.xml
-├── src/
-│ └── main/java/com/example/demo/DemoApplication.java
-└── target/
-└── demo-0.0.1-SNAPSHOT.jar
-
-
 ---
 
 ##  Steps to Run

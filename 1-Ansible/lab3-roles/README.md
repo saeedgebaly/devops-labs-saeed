@@ -5,28 +5,6 @@ Automate the installation and configuration of **Docker**, **Kubernetes CLI (kub
 
 ---
 
-## Project Structure
-
-ansible-lab/
-├── inventory
-├── playbook.yml
-└── roles/
-├── docker/
-│ └── tasks/main.yml
-├── kubectl/
-│ └── tasks/main.yml
-└── jenkins/
-└── tasks/main.yml
-
-
-
-Each role is responsible for installing and configuring one tool:
-- `docker` → Installs and enables Docker.
-- `kubectl` → Installs Kubernetes CLI.
-- `jenkins` → Installs and starts Jenkins service.
-
----
-
 ##  How It Works
 
 ###Inventory File
