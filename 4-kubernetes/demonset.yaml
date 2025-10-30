@@ -1,0 +1,24 @@
+#Deploy a DaemonSet for Prometheus node-exporter that tolerates all taints. Validate that a node-exporter pod is scheduled on each node.
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: node-exporter
+  namespace: monitoring
+spec:
+  selector:
+    matchLabels:
+      app: node-exporter
+  template:
+    metadata:
+      labels:
+        app: node-exporter
+    spec:
+      containers:
+        - name: node-exporter
+          image: prom/node-exporter:latest
+          ports:
+            - containerPort: 9100
+              name: metrics
+      tolerations:
+        - operator: Exists        
+        
